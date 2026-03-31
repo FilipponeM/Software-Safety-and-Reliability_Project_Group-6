@@ -14,11 +14,11 @@ enum PacketType
 
 enum class ServerState
 {
-    DISCONNECTED,
-    CONNECTED,
-    AUTHENTICATED,
-    DATA_RECEIVING,
-    DATA_TRANSFER
+    DISCONNECTED = 0,
+    CONNECTED = 1,
+    AUTHENTICATED = 2,
+    DATA_RECEIVING = 3,
+    DATA_TRANSFER = 4
 };
 
 //Static packetheader 
@@ -36,13 +36,13 @@ struct FuelTelemetryData
     float fuelLevel;
     float fuelConsumption;
     float fuelTemperature;
-    char* timestamp;
+    char timestamp[32];
 };
 
 //ServerstateSwt=itch packet
 struct ServerStateSwitch
 {
     int requestedState;
-    char* timestamp;
+    char timestamp[32];
 
 };
