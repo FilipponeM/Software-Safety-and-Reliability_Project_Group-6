@@ -6,6 +6,7 @@
 #pragma once
 
 #include <winsock2.h>
+#include "../Shared/DataPacket.h"
 
 //client class
 class Client
@@ -22,5 +23,6 @@ public:
 
     bool initializeWinsock();
     bool connectToServer();
+    bool sendDataPacket(const DataPacket& packet);
     void cleanup();
 };

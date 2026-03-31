@@ -82,6 +82,31 @@ bool Server::acceptClient()
     return true;
 }
 
+bool Server::receiveData(DataPacket& outPacket)
+{
+    if (clientSocket == INVALID_SOCKET) return false;
+
+    PacketHeader header;
+    int totalRead = 0;
+    while (totalRead < sizeof(PacketHeader)) {
+        int bytesRead = recv(clientSocket, reinterpret_cast<char*>(&header) + totalRead, sizeof(PacketHeader) - totalRead, 0);
+        if (bytesRead <= 0) return false;
+        totalRead += bytesRead;
+    }
+
+    std::vector<char> buffer(sizeof(PacketHeader) + header.payloadSize);
+    memcpy(buffer.data(), &header, sizeof(PacketHeader));
+
+    totalRead = 0;
+    while (totalRead < header.payloadSize) {
+        int bytesRead = recv(clientSocket, buffer.data() + sizeof(PacketHeader) + totalRead, header.payloadSize - totalRead, 0);
+        if (bytesRead <= 0) return false;
+        totalRead += bytesRead;
+    }
+
+    return outPacket.deserialize(buffer);
+}
+
 void Server::cleanup()
 {
     if (clientSocket != INVALID_SOCKET)

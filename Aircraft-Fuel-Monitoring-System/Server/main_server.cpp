@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include "Server.h"
+#include "../Shared/DataPacket.h"
+#include "../Shared/Logger.h"
 
 //main function to run the server with error handling for the different points during connection
 int main()
@@ -30,6 +32,19 @@ int main()
     }
 
     std::cout << "Server setup complete.\n";
+    Logger::logEvent("server_log.csv", "CONNECT");
 
+    while (true) {
+        DataPacket packet;
+        if (server.receiveData(packet)) {
+            std::cout << "Received packet (Aircraft: " << packet.header.aircraftID << ", Fuel: " << packet.telemetry.fuelLevel << ")\n";
+            Logger::logPacket("server_log.csv", "RECEIVE", packet);
+        } else {
+            std::cout << "Client disconnected or error.\n";
+            break;
+        }
+    }
+
+    Logger::logEvent("server_log.csv", "DISCONNECT");
     return 0;
 }

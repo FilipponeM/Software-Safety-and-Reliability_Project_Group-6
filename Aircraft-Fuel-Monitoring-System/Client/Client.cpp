@@ -58,6 +58,22 @@ bool Client::connectToServer()
     return true;
 }
 
+bool Client::sendDataPacket(const DataPacket& packet)
+{
+    if (clientSocket == INVALID_SOCKET) {
+        std::cout << "Socket is not connected.\n";
+        return false;
+    }
+    
+    std::vector<char> buffer = packet.serialize();
+    int result = send(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
+    if (result == SOCKET_ERROR) {
+        std::cout << "Send failed with error: " << WSAGetLastError() << "\n";
+        return false;
+    }
+    return true;
+}
+
 void Client::cleanup()
 {
     if (clientSocket != INVALID_SOCKET)

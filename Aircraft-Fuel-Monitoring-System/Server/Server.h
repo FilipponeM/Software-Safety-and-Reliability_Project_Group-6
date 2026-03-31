@@ -6,6 +6,7 @@
 #pragma once
 
 #include <winsock2.h>
+#include "../Shared/DataPacket.h"
 
 //Server class
 class Server
@@ -23,5 +24,6 @@ public:
     bool initializeWinsock();
     bool startServer();
     bool acceptClient();
+    bool receiveData(DataPacket& outPacket);
     void cleanup();
 };
