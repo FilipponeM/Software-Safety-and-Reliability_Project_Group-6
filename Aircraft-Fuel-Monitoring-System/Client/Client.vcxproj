@@ -124,6 +124,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Server\Packet.h" />
+    <ClInclude Include="..\Shared\DataPacket.h" />
+    <ClInclude Include="..\Shared\Logger.h" />
     <ClInclude Include="Client.h" />
   </ItemGroup>
   <ItemGroup>
