@@ -123,8 +123,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Packet.h" />
+    <ClInclude Include="..\Shared\DataPacket.h" />
+    <ClInclude Include="..\Shared\Logger.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="StateMachine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main_server.cpp" />
