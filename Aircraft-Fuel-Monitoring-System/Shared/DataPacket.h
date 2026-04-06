@@ -6,9 +6,11 @@
 #include <cstdint>
 
 struct PacketHeader {
-    char aircraftID[16];
+    char     aircraftID[16];
     uint32_t payloadSize;
     uint32_t timestamp;
+    uint8_t  packetType;
+    uint8_t  _pad[3];
 };
 
 struct TelemetryData {
@@ -17,50 +19,51 @@ struct TelemetryData {
     double fuelTemperature;
 };
 
+constexpr uint8_t PKT_TELEMETRY     = 1;
+constexpr uint8_t PKT_AUTH_REQUEST  = 2;
+constexpr uint8_t PKT_AUTH_ACK      = 3;
+constexpr uint8_t PKT_DATA_REQUEST  = 4;
+constexpr uint8_t PKT_DATA_RESPONSE = 5;
+
 class DataPacket {
 public:
-    PacketHeader header;
+    PacketHeader  header;
     TelemetryData telemetry;
-    char* extensionData; // Dynamically allocated element for extensibility
+    char*         extensionData;
 
     DataPacket() : extensionData(nullptr) {
-        memset(&header, 0, sizeof(PacketHeader));
+        memset(&header,    0, sizeof(PacketHeader));
         memset(&telemetry, 0, sizeof(TelemetryData));
         header.payloadSize = sizeof(TelemetryData);
+        header.packetType  = PKT_TELEMETRY;
     }
 
     ~DataPacket() {
-        if (extensionData) {
-            delete[] extensionData;
-            extensionData = nullptr;
-        }
+        delete[] extensionData;
+        extensionData = nullptr;
     }
 
-    // Copy constructor required due to dynamic allocation
     DataPacket(const DataPacket& other) {
-        header = other.header;
+        header    = other.header;
         telemetry = other.telemetry;
         if (other.extensionData && header.payloadSize > sizeof(TelemetryData)) {
-            size_t extSize = header.payloadSize - sizeof(TelemetryData);
-            extensionData = new char[extSize];
-            memcpy(extensionData, other.extensionData, extSize);
+            size_t n = header.payloadSize - sizeof(TelemetryData);
+            extensionData = new char[n];
+            memcpy(extensionData, other.extensionData, n);
         } else {
             extensionData = nullptr;
         }
     }
 
-    // Assignment operator
     DataPacket& operator=(const DataPacket& other) {
         if (this != &other) {
-            if (extensionData) {
-                delete[] extensionData;
-            }
-            header = other.header;
+            delete[] extensionData;
+            header    = other.header;
             telemetry = other.telemetry;
             if (other.extensionData && header.payloadSize > sizeof(TelemetryData)) {
-                size_t extSize = header.payloadSize - sizeof(TelemetryData);
-                extensionData = new char[extSize];
-                memcpy(extensionData, other.extensionData, extSize);
+                size_t n = header.payloadSize - sizeof(TelemetryData);
+                extensionData = new char[n];
+                memcpy(extensionData, other.extensionData, n);
             } else {
                 extensionData = nullptr;
             }
@@ -69,10 +72,8 @@ public:
     }
 
     void setExtensionData(const char* data, size_t size) {
-        if (extensionData) {
-            delete[] extensionData;
-            extensionData = nullptr;
-        }
+        delete[] extensionData;
+        extensionData = nullptr;
         if (size > 0 && data) {
             extensionData = new char[size];
             memcpy(extensionData, data, size);
@@ -81,36 +82,29 @@ public:
     }
 
     std::vector<char> serialize() const {
-        std::vector<char> buffer(sizeof(PacketHeader) + header.payloadSize);
-        memcpy(buffer.data(), &header, sizeof(PacketHeader));
-        
-        if (header.payloadSize >= sizeof(TelemetryData)) {
-            memcpy(buffer.data() + sizeof(PacketHeader), &telemetry, sizeof(TelemetryData));
-        }
-
+        std::vector<char> buf(sizeof(PacketHeader) + header.payloadSize);
+        memcpy(buf.data(), &header, sizeof(PacketHeader));
+        if (header.payloadSize >= sizeof(TelemetryData))
+            memcpy(buf.data() + sizeof(PacketHeader), &telemetry, sizeof(TelemetryData));
         if (extensionData && header.payloadSize > sizeof(TelemetryData)) {
-            size_t extSize = header.payloadSize - sizeof(TelemetryData);
-            memcpy(buffer.data() + sizeof(PacketHeader) + sizeof(TelemetryData), extensionData, extSize);
+            size_t n = header.payloadSize - sizeof(TelemetryData);
+            memcpy(buf.data() + sizeof(PacketHeader) + sizeof(TelemetryData), extensionData, n);
         }
-        return buffer;
+        return buf;
     }
 
-    bool deserialize(const std::vector<char>& buffer) {
-        if (buffer.size() < sizeof(PacketHeader)) return false;
-        memcpy(&header, buffer.data(), sizeof(PacketHeader));
-        
-        if (buffer.size() < sizeof(PacketHeader) + header.payloadSize) return false;
-        
+    bool deserialize(const std::vector<char>& buf) {
+        if (buf.size() < sizeof(PacketHeader)) return false;
+        memcpy(&header, buf.data(), sizeof(PacketHeader));
+        if (buf.size() < sizeof(PacketHeader) + header.payloadSize) return false;
         if (header.payloadSize >= sizeof(TelemetryData)) {
-            memcpy(&telemetry, buffer.data() + sizeof(PacketHeader), sizeof(TelemetryData));
-            
-            size_t extSize = header.payloadSize - sizeof(TelemetryData);
-            if (extSize > 0) {
-                if (extensionData) {
-                    delete[] extensionData;
-                }
-                extensionData = new char[extSize];
-                memcpy(extensionData, buffer.data() + sizeof(PacketHeader) + sizeof(TelemetryData), extSize);
+            memcpy(&telemetry, buf.data() + sizeof(PacketHeader), sizeof(TelemetryData));
+            size_t n = header.payloadSize - sizeof(TelemetryData);
+            if (n > 0) {
+                delete[] extensionData;
+                extensionData = new char[n];
+                memcpy(extensionData,
+                       buf.data() + sizeof(PacketHeader) + sizeof(TelemetryData), n);
             }
         }
         return true;
